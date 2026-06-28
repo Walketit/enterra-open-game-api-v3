@@ -4,3 +4,32 @@ export interface UrlParams {
   client: string;
   language: string;
 }
+
+export interface SessionParams {
+  currencyIso: string;
+  id: string;
+  longLifeLoginToken: '' | 'true' | 'false';
+  launchUrlQueryParams: string;
+}
+
+export interface PlayerParams {
+  id: string;
+  nick: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  city: string;
+  address: string;
+  zip: string;
+  state: string;
+  countryIso: string;
+  preferredCurrencyIso: string;
+  referralCode: string;
+  bonusCode: string;
+  tag: string;
+  active: '' | 'true' | 'false';
+  verified: '' | 'true' | 'false';
+  trustedLevel: string;
+  avatar: string;
+  redeemCode: string;
+}
