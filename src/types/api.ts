@@ -33,3 +33,21 @@ export interface PlayerParams {
   avatar: string;
   redeemCode: string;
 }
+
+export type SignatureAlg = 'ed25519' | 'rsa-pss';
+
+export interface SignatureParams {
+  alg: SignatureAlg;
+  created: number;
+  expires: number;
+  nonce: string;
+  privateKey: string;
+}
+
+export interface GeneratedHeaders {
+  'Content-Type': string;
+  'Accept': string;
+  'Content-Digest': string;
+  'Signature-Input': string;
+  'Signature': string;
+}
