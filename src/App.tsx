@@ -9,6 +9,7 @@ import SignatureForm from './components/SignatureForm';
 import { buildUrl } from './utils/urlBuilder';
 import { buildRequestBody } from './utils/requestBodyBuilder';
 import { buildHeaders, generateNonce, nowSeconds } from './utils/signatureBuilder';
+import { buildCurl } from './utils/curlBuilder';
 import type {
   UrlParams,
   SessionParams,
@@ -201,6 +202,31 @@ function App() {
                     {sigParams.privateKey
                       ? 'Заполните URL для генерации заголовков'
                       : 'Введите приватный ключ для генерации заголовков'}
+                  </Typography>
+                )}
+              </Paper>
+
+              {/* cURL example */}
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  cURL
+                </Typography>
+                {headers && generatedUrl ? (
+                  <Box
+                    component="pre"
+                    sx={{
+                      fontSize: '13px',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                      overflowX: 'hidden',
+                      mt: 1,
+                    }}
+                  >
+                    {buildCurl(generatedUrl, headers, bodyJson)}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                    Заполните URL и параметры подписи для генерации примера
                   </Typography>
                 )}
               </Paper>
