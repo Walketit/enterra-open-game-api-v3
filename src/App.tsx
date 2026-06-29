@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { Box, Container, Typography, Paper, Divider } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import { Box, Typography, Paper, Divider } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import UrlParamsForm from './components/UrlParamsForm';
 import RequestBodyForm from './components/RequestBodyForm';
@@ -10,6 +9,8 @@ import { buildUrl } from './utils/urlBuilder';
 import { buildRequestBody } from './utils/requestBodyBuilder';
 import { buildHeaders, generateNonce, nowSeconds } from './utils/signatureBuilder';
 import { buildCurl } from './utils/curlBuilder';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type {
   UrlParams,
   SessionParams,
@@ -102,138 +103,146 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Grid container spacing={3}>
-          {/* Left side — all input forms */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <UrlParamsForm params={urlParams} onChange={setUrlParams} />
-              <Divider />
-              <RequestBodyForm
-                session={session}
-                player={player}
-                onSessionChange={setSession}
-                onPlayerChange={setPlayer}
-              />
-              <Divider />
-              <SignatureForm params={sigParams} onChange={setSigParams} />
-            </Box>
-          </Grid>
+      <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
 
-          {/* Right side — generated output */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box
-              sx={{
-                maxHeight: '100vh',
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                position: 'sticky',
-                top: 24,
-              }}
-            >
-              {/* URL */}
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Generated URL
-                </Typography>
-                {generatedUrl ? (
-                  <Typography
-                    component="pre"
-                    sx={{
-                      fontSize: '16px',
-                      wordBreak: 'break-all',
+        {/* Left side — all input forms */}
+        <Box sx={{
+          width: '30%',
+          flexShrink: 0,
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflowY: 'auto',
+          p: 3,
+        }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <UrlParamsForm params={urlParams} onChange={setUrlParams} />
+            <Divider />
+            <RequestBodyForm
+              session={session}
+              player={player}
+              onSessionChange={setSession}
+              onPlayerChange={setPlayer}
+            />
+            <Divider />
+            <SignatureForm params={sigParams} onChange={setSigParams} />
+          </Box>
+        </Box>
+
+        <Divider orientation="vertical" flexItem />
+
+        {/* Right side — generated output */}
+        <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* cURL example */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              cURL
+            </Typography>
+            {headers && generatedUrl ? (
+              <Box sx={{ mt: 1 }}>
+                <SyntaxHighlighter
+                  language="bash"
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    padding: '16px',
+                    background: '#1e1e1e',
+                  }}
+                  wrapLongLines
+                  codeTagProps={{
+                    style: {
                       whiteSpace: 'pre-wrap',
-                      mt: 1,
-                    }}
-                  >
-                    {generatedUrl}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                    Please fill in required fields (baseUrl, gameId, client)
-                  </Typography>
-                )}
-              </Paper>
-
-              {/* Request Body */}
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Request Body (JSON)
-                </Typography>
-                <Typography
-                  component="pre"
-                  sx={{ fontSize: '16px', whiteSpace: 'pre-wrap', mt: 1 }}
+                      wordBreak: 'break-all',
+                    },
+                  }}
                 >
-                  {bodyJson}
-                </Typography>
-              </Paper>
+                  {buildCurl(generatedUrl, headers, bodyJson)}
+                </SyntaxHighlighter>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                Please fill in URL and signature parameters to generate the example
+              </Typography>
+            )}
+          </Paper>
 
-              {/* Headers */}
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  HTTP Headers
-                </Typography>
+          {/* URL */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Generated URL
+            </Typography>
+            {generatedUrl ? (
+              <Typography
+                component="pre"
+                sx={{
+                  fontSize: '16px',
+                  wordBreak: 'break-all',
+                  whiteSpace: 'pre-wrap',
+                  mt: 1,
+                }}
+              >
+                {generatedUrl}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                Please fill in required fields (baseUrl, gameId, client)
+              </Typography>
+            )}
+          </Paper>
 
-                {sigError && (
-                  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                    {sigError}
-                  </Typography>
-                )}
+          {/* Request Body */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Request Body (JSON)
+            </Typography>
+            <Typography
+              component="pre"
+              sx={{ fontSize: '16px', whiteSpace: 'pre-wrap', mt: 1 }}
+            >
+              {bodyJson}
+            </Typography>
+          </Paper>
 
-                {headers ? (
-                  <Box
-                    component="pre"
-                    sx={{
-                      fontSize: '16px',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                      overflowX: 'hidden',
-                      mt: 1,
-                    }}
-                  >
-                    {Object.entries(headers)
-                      .map(([k, v]) => `${k}: ${v}`)
-                      .join('\n')}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                    {sigParams.privateKey
-                      ? 'Fill in URL to generate headers'
-                      : 'Enter private key to generate headers'}
-                  </Typography>
-                )}
-              </Paper>
+          {/* Headers */}
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              HTTP Headers
+            </Typography>
 
-              {/* cURL example */}
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  cURL
-                </Typography>
-                {headers && generatedUrl ? (
-                  <Box
-                    component="pre"
-                    sx={{
-                      fontSize: '13px',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                      overflowX: 'hidden',
-                      mt: 1,
-                    }}
-                  >
-                    {buildCurl(generatedUrl, headers, bodyJson)}
-                  </Box>
-                ) : (
-                  <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                    Please fill in URL and signature parameters to generate the example
-                  </Typography>
-                )}
-              </Paper>
-            </Box>
-          </Grid>
-        </Grid>
-      </Container>
+            {sigError && (
+              <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                {sigError}
+              </Typography>
+            )}
+
+            {headers ? (
+              <Box
+                component="pre"
+                sx={{
+                  fontSize: '16px',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  overflowX: 'hidden',
+                  mt: 1,
+                }}
+              >
+                {Object.entries(headers)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join('\n')}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                {sigParams.privateKey
+                  ? 'Fill in URL to generate headers'
+                  : 'Enter private key to generate headers'}
+              </Typography>
+            )}
+          </Paper>
+        </Box>
+
+      </Box>
     </ThemeProvider>
   );
 }
