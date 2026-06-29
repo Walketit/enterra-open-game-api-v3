@@ -34,7 +34,7 @@ export interface PlayerParams {
   redeemCode: string;
 }
 
-export type SignatureAlg = 'ed25519' | 'rsa-pss';
+export type SignatureAlg = 'ed25519';
 
 export interface SignatureParams {
   alg: SignatureAlg;

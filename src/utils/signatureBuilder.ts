@@ -23,26 +23,15 @@ async function computeContentDigest(bodyJson: string): Promise<string> {
 }
 
 /* Import PEM private key for signing */
-async function importPrivateKey(pem: string, alg: SignatureParams['alg']): Promise<CryptoKey> {
+async function importPrivateKey(pem: string): Promise<CryptoKey> {
   const keyData = pemToArrayBuffer(pem);
-
-  if (alg === 'ed25519') {
-    return crypto.subtle.importKey(
-      'pkcs8',
-      keyData,
-      { name: 'Ed25519' },
-      false,
-      ['sign'],
-    );
-  } else {
-    return crypto.subtle.importKey(
-      'pkcs8',
-      keyData,
-      { name: 'RSA-PSS', hash: 'SHA-256' },
-      false,
-      ['sign'],
-    );
-  }
+  return crypto.subtle.importKey(
+    'pkcs8',
+    keyData,
+    { name: 'Ed25519' },
+    false,
+    ['sign'],
+  );
 }
 
 /* Build the signature params value */
@@ -75,13 +64,10 @@ export async function buildHeaders(
   const signatureParamsValue = buildSignatureParamsValue(sig, keyid);
   const signatureBase = buildSignatureBase(targetUri, contentDigest, signatureParamsValue);
 
-  const key = await importPrivateKey(sig.privateKey, sig.alg);
+  const key = await importPrivateKey(sig.privateKey);
 
-  const algorithm = sig.alg === 'ed25519'
-    ? 'Ed25519'
-    : { name: 'RSA-PSS', saltLength: 32 };
   const signatureBuffer = await crypto.subtle.sign(
-    algorithm,
+    'Ed25519',
     key,
     new TextEncoder().encode(signatureBase),
   );

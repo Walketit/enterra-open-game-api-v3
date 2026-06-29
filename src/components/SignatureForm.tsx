@@ -9,7 +9,6 @@ interface SignatureFormProps {
 
 const ALG_OPTIONS = [
   { value: 'ed25519', label: 'ed25519' },
-  { value: 'rsa-pss', label: 'rsa-pss' },
 ];
 
 export default function SignatureForm({ params, onChange }: SignatureFormProps) {
