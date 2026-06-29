@@ -36,12 +36,12 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
 
   const createdExpiresError =
     params.expires <= params.created
-      ? 'expires должен быть больше created'
+      ? 'expires must be greater than created'
       : params.expires - params.created > 300
-        ? 'expires − created не должен превышать 300 секунд'
+        ? 'expires − created must not exceed 300 seconds'
         : '';
 
-  const nonceError = params.nonce.length > 128 ? 'Максимум 128 символов' : '';
+  const nonceError = params.nonce.length > 128 ? 'Maximum 128 characters' : '';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -76,7 +76,7 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         size="small"
         fullWidth
         type="number"
-        helperText="Unix timestamp (секунды)"
+        helperText="Unix timestamp (seconds)"
       />
 
       <TextField
@@ -87,7 +87,7 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         fullWidth
         type="number"
         error={!!createdExpiresError}
-        helperText={createdExpiresError || 'Unix timestamp (секунды), max +300 от created'}
+        helperText={createdExpiresError || 'Unix timestamp (seconds), max +300 from created'}
       />
 
       <TextField
@@ -97,7 +97,7 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         size="small"
         fullWidth
         error={!!nonceError}
-        helperText={nonceError || `${params.nonce.length}/128 символов`}
+        helperText={nonceError || `${params.nonce.length}/128 characters`}
       />
 
       <TextField
@@ -109,7 +109,7 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         fullWidth
         multiline
         minRows={4}
-        helperText="PEM-ключ. Не сохраняется."
+        helperText="PEM key."
       />
     </Box>
   );

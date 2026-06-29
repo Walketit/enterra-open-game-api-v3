@@ -15,7 +15,7 @@ interface RequestBodyFormProps {
 }
 
 const BOOL_OPTIONS = [
-  { value: '', label: 'не задано' },
+  { value: '', label: 'not set' },
   { value: 'true', label: 'true' },
   { value: 'false', label: 'false' },
 ];
@@ -51,7 +51,7 @@ export default function RequestBodyForm({
         size="small"
         fullWidth
         disabled
-        helperText="Обязательное, фиксированное значение"
+        helperText="Required, fixed value"
       />
 
       <TextField
@@ -96,7 +96,7 @@ export default function RequestBodyForm({
         fullWidth
         multiline
         minRows={2}
-        helperText="Валидный JSON объект"
+        helperText="Valid JSON object"
       />
 
       <Divider />
@@ -175,7 +175,7 @@ export default function RequestBodyForm({
         size="small"
         fullWidth
         type="number"
-        helperText="Число"
+        helperText="Number"
       />
     </Box>
   );

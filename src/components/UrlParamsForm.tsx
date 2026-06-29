@@ -17,7 +17,7 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Typography variant="h6" color="text.secondary">
-        URL параметры
+        URL Parameters
       </Typography>
 
       <TextField
@@ -54,7 +54,7 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
         onChange={handleChange('language')}
         fullWidth
         size="small"
-        helperText="(необязательно, по умолчанию: en)"
+        helperText="(optional, default: en)"
       />
     </Box>
   );

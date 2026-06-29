@@ -95,7 +95,7 @@ function App() {
       })
       .catch((e: unknown) => {
         setHeaders(null);
-        setSigError(e instanceof Error ? e.message : 'Ошибка генерации подписи');
+        setSigError(e instanceof Error ? e.message : 'Signature generation error');
       });
   }, [sigParams, urlParams.client, generatedUrl, bodyJson]);
 
@@ -136,7 +136,7 @@ function App() {
               {/* URL */}
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Сформированный URL
+                  Generated URL
                 </Typography>
                 {generatedUrl ? (
                   <Typography
@@ -152,7 +152,7 @@ function App() {
                   </Typography>
                 ) : (
                   <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                    Заполните обязательные поля (baseUrl, gameId, client)
+                    Please fill in required fields (baseUrl, gameId, client)
                   </Typography>
                 )}
               </Paper>
@@ -200,8 +200,8 @@ function App() {
                 ) : (
                   <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
                     {sigParams.privateKey
-                      ? 'Заполните URL для генерации заголовков'
-                      : 'Введите приватный ключ для генерации заголовков'}
+                      ? 'Fill in URL to generate headers'
+                      : 'Enter private key to generate headers'}
                   </Typography>
                 )}
               </Paper>
@@ -226,7 +226,7 @@ function App() {
                   </Box>
                 ) : (
                   <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                    Заполните URL и параметры подписи для генерации примера
+                    Please fill in URL and signature parameters to generate the example
                   </Typography>
                 )}
               </Paper>
