@@ -9,8 +9,10 @@ import { buildUrl } from './utils/urlBuilder';
 import { buildRequestBody } from './utils/requestBodyBuilder';
 import { buildHeaders, generateNonce, nowSeconds } from './utils/signatureBuilder';
 import { buildCurl } from './utils/curlBuilder';
+import { buildPhp } from './utils/phpBuilder';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Tabs, Tab } from '@mui/material';
 import type {
   UrlParams,
   SessionParams,
@@ -77,6 +79,7 @@ function App() {
 
   const [headers, setHeaders] = useState<GeneratedHeaders | null>(null);
   const [sigError, setSigError] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'curl' | 'php'>('curl');
 
   const generatedUrl = buildUrl(urlParams);
   const requestBody = buildRequestBody(session, player);
@@ -133,15 +136,21 @@ function App() {
 
         {/* Right side — generated output */}
         <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* cURL example */}
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              cURL
-            </Typography>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              {/* Tabs - curl or php currently */}
+              <Tabs
+                value={activeTab}
+                onChange={(_, newValue: 'curl' | 'php') => setActiveTab(newValue)}
+              >
+                <Tab label="cURL" value="curl" sx={{ textTransform: 'none' }} />
+                <Tab label="PHP" value="php" sx={{ textTransform: 'none' }} />
+              </Tabs>
+            </Box>
             {headers && generatedUrl ? (
               <Box sx={{ mt: 1 }}>
                 <SyntaxHighlighter
-                  language="bash"
+                  language={activeTab === 'curl' ? 'bash' : 'php'}
                   style={vscDarkPlus}
                   customStyle={{
                     margin: 0,
@@ -158,7 +167,9 @@ function App() {
                     },
                   }}
                 >
-                  {buildCurl(generatedUrl, headers, bodyJson)}
+                  {activeTab === 'curl'
+                    ? buildCurl(generatedUrl, headers, bodyJson)
+                    : buildPhp(generatedUrl, urlParams.client, bodyJson)}
                 </SyntaxHighlighter>
               </Box>
             ) : (
