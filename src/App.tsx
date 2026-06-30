@@ -10,6 +10,7 @@ import { buildRequestBody } from './utils/requestBodyBuilder';
 import { buildHeaders, generateNonce, nowSeconds } from './utils/signatureBuilder';
 import { buildCurl } from './utils/curlBuilder';
 import { buildPhp } from './utils/phpBuilder';
+import { buildPython } from './utils/pythonBuilder';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Tabs, Tab } from '@mui/material';
@@ -79,7 +80,7 @@ function App() {
 
   const [headers, setHeaders] = useState<GeneratedHeaders | null>(null);
   const [sigError, setSigError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'curl' | 'php'>('curl');
+  const [activeTab, setActiveTab] = useState<'curl' | 'php' | 'python'>('curl');
 
   const generatedUrl = buildUrl(urlParams);
   const requestBody = buildRequestBody(session, player);
@@ -138,19 +139,20 @@ function App() {
         <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-              {/* Tabs - curl or php currently */}
+              {/* Tabs - curl, php, or python */}
               <Tabs
                 value={activeTab}
-                onChange={(_, newValue: 'curl' | 'php') => setActiveTab(newValue)}
+                onChange={(_, newValue: 'curl' | 'php' | 'python') => setActiveTab(newValue)}
               >
                 <Tab label="cURL" value="curl" sx={{ textTransform: 'none' }} />
                 <Tab label="PHP" value="php" sx={{ textTransform: 'none' }} />
+                <Tab label="Python" value="python" sx={{ textTransform: 'none' }} />
               </Tabs>
             </Box>
             {headers && generatedUrl ? (
               <Box sx={{ mt: 1 }}>
                 <SyntaxHighlighter
-                  language={activeTab === 'curl' ? 'bash' : 'php'}
+                  language={activeTab === 'curl' ? 'bash' : activeTab === 'php' ? 'php' : 'python'}
                   style={vscDarkPlus}
                   customStyle={{
                     margin: 0,
@@ -169,7 +171,9 @@ function App() {
                 >
                   {activeTab === 'curl'
                     ? buildCurl(generatedUrl, headers, bodyJson)
-                    : buildPhp(generatedUrl, urlParams.client, bodyJson)}
+                    : activeTab === 'php'
+                      ? buildPhp(generatedUrl, urlParams.client, bodyJson)
+                      : buildPython(generatedUrl, urlParams.client, bodyJson)}
                 </SyntaxHighlighter>
               </Box>
             ) : (
