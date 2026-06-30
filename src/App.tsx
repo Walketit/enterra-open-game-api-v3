@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { Box, Typography, Paper, Divider } from '@mui/material';
+import { Box, Typography, Paper, Divider, Alert } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import UrlParamsForm from './components/UrlParamsForm';
 import RequestBodyForm from './components/RequestBodyForm';
@@ -73,6 +73,7 @@ function makeDefaultSignature(): SignatureParams {
 }
 
 function App() {
+  /* State management */
   const [urlParams, setUrlParams] = useState<UrlParams>(DEFAULT_URL_PARAMS);
   const [session, setSession] = useState<SessionParams>(DEFAULT_SESSION);
   const [player, setPlayer] = useState<PlayerParams>(DEFAULT_PLAYER);
@@ -80,12 +81,14 @@ function App() {
 
   const [headers, setHeaders] = useState<GeneratedHeaders | null>(null);
   const [sigError, setSigError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'curl' | 'php' | 'python'>('curl');
+  const [activeTab, setActiveTab] = useState<'curl' | 'php' | 'python' | 'link'>('curl');
 
+  /* Request data construction */
   const generatedUrl = buildUrl(urlParams);
   const requestBody = buildRequestBody(session, player);
   const bodyJson = JSON.stringify(requestBody, null, 2);
 
+  /* Compute ed25519 HTTP signature */
   useEffect(() => {
     if (!sigParams.privateKey || !generatedUrl) {
       setHeaders(null);
@@ -104,6 +107,7 @@ function App() {
       });
   }, [sigParams, urlParams.client, generatedUrl, bodyJson]);
 
+  /* UI layout */
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -139,42 +143,63 @@ function App() {
         <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-              {/* Tabs - curl, php, or python */}
+              {/* Generated requests - curl, php, python, or link */}
               <Tabs
                 value={activeTab}
-                onChange={(_, newValue: 'curl' | 'php' | 'python') => setActiveTab(newValue)}
+                onChange={(_, newValue: 'curl' | 'php' | 'python' | 'link') => setActiveTab(newValue)}
               >
                 <Tab label="cURL" value="curl" sx={{ textTransform: 'none' }} />
                 <Tab label="PHP" value="php" sx={{ textTransform: 'none' }} />
                 <Tab label="Python" value="python" sx={{ textTransform: 'none' }} />
+                <Tab label="Link" value="link" sx={{ textTransform: 'none' }} />
               </Tabs>
             </Box>
             {headers && generatedUrl ? (
               <Box sx={{ mt: 1 }}>
-                <SyntaxHighlighter
-                  language={activeTab === 'curl' ? 'bash' : activeTab === 'php' ? 'php' : 'python'}
-                  style={vscDarkPlus}
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: '4px',
-                    fontSize: '13px',
-                    padding: '16px',
-                    background: '#1e1e1e',
-                  }}
-                  wrapLongLines
-                  codeTagProps={{
-                    style: {
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                    },
-                  }}
-                >
-                  {activeTab === 'curl'
-                    ? buildCurl(generatedUrl, headers, bodyJson)
-                    : activeTab === 'php'
-                      ? buildPhp(generatedUrl, urlParams.client, bodyJson)
-                      : buildPython(generatedUrl, urlParams.client, bodyJson)}
-                </SyntaxHighlighter>
+                {activeTab !== 'link' ? (
+                  <SyntaxHighlighter
+                    language={activeTab === 'curl' ? 'bash' : activeTab === 'php' ? 'php' : 'python'}
+                    style={vscDarkPlus}
+                    customStyle={{
+                      margin: 0,
+                      borderRadius: '4px',
+                      fontSize: '16px',
+                      padding: '16px',
+                      background: '#00000000',
+                    }}
+                    wrapLongLines
+                    codeTagProps={{
+                      style: {
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-all',
+                      },
+                    }}
+                  >
+                    {activeTab === 'curl'
+                      ? buildCurl(generatedUrl, headers, bodyJson)
+                      : activeTab === 'php'
+                        ? buildPhp(generatedUrl, urlParams.client, bodyJson)
+                        : buildPython(generatedUrl, urlParams.client, bodyJson)}
+                  </SyntaxHighlighter>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Alert severity="warning" sx={{ borderRadius: '4px', fontSize: '16px', }}>
+                      URL itself is not a complete request. To execute, headers and body are also required.
+                    </Alert>
+                    <Box
+                      sx={{
+                        background: '#000000',
+                        p: 2,
+                        borderRadius: '4px',
+                        wordBreak: 'break-all',
+                        fontSize: '16px',
+                        color: '#ffffffff',
+                      }}
+                    >
+                      {generatedUrl}
+                    </Box>
+                  </Box>
+                )}
               </Box>
             ) : (
               <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
