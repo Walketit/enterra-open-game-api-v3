@@ -13,7 +13,9 @@ import { buildPhp } from './utils/phpBuilder';
 import { buildPython } from './utils/pythonBuilder';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Tabs, Tab } from '@mui/material';
+import { Tabs, Tab, Tooltip, IconButton } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import type {
   UrlParams,
   SessionParams,
@@ -82,6 +84,13 @@ function App() {
   const [headers, setHeaders] = useState<GeneratedHeaders | null>(null);
   const [sigError, setSigError] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'curl' | 'php' | 'python' | 'link'>('curl');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   /* Request data construction */
   const generatedUrl = buildUrl(urlParams);
@@ -142,7 +151,7 @@ function App() {
         {/* Right side — generated output */}
         <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               {/* Generated requests - curl, php, python, or link */}
               <Tabs
                 value={activeTab}
@@ -153,6 +162,23 @@ function App() {
                 <Tab label="Python" value="python" sx={{ textTransform: 'none' }} />
                 <Tab label="Link" value="link" sx={{ textTransform: 'none' }} />
               </Tabs>
+              {headers && generatedUrl && (
+                <Tooltip title={copiedId === activeTab ? 'Copied!' : 'Copy to clipboard'}>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      let text = '';
+                      if (activeTab === 'curl') text = buildCurl(generatedUrl, headers, bodyJson);
+                      else if (activeTab === 'php') text = buildPhp(generatedUrl, urlParams.client, bodyJson);
+                      else if (activeTab === 'python') text = buildPython(generatedUrl, urlParams.client, bodyJson);
+                      else if (activeTab === 'link') text = generatedUrl;
+                      handleCopy(text, activeTab);
+                    }}
+                  >
+                    {copiedId === activeTab ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
             {headers && generatedUrl ? (
               <Box sx={{ mt: 1 }}>
@@ -210,9 +236,18 @@ function App() {
 
           {/* URL */}
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Generated URL
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Generated URL
+              </Typography>
+              {generatedUrl && (
+                <Tooltip title={copiedId === 'plain-url' ? 'Copied!' : 'Copy URL'}>
+                  <IconButton size="small" onClick={() => handleCopy(generatedUrl, 'plain-url')}>
+                    {copiedId === 'plain-url' ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
             {generatedUrl ? (
               <Typography
                 component="pre"
@@ -234,9 +269,16 @@ function App() {
 
           {/* Request Body */}
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Request Body (JSON)
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Request Body (JSON)
+              </Typography>
+              <Tooltip title={copiedId === 'plain-body' ? 'Copied!' : 'Copy JSON Body'}>
+                <IconButton size="small" onClick={() => handleCopy(bodyJson, 'plain-body')}>
+                  {copiedId === 'plain-body' ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </Box>
             <Typography
               component="pre"
               sx={{ fontSize: '16px', whiteSpace: 'pre-wrap', mt: 1 }}
@@ -247,9 +289,26 @@ function App() {
 
           {/* Headers */}
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              HTTP Headers
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                HTTP Headers
+              </Typography>
+              {headers && (
+                <Tooltip title={copiedId === 'all-headers' ? 'Copied!' : 'Copy All Headers'}>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const allText = Object.entries(headers)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join('\n');
+                      handleCopy(allText, 'all-headers');
+                    }}
+                  >
+                    {copiedId === 'all-headers' ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
 
             {sigError && (
               <Typography variant="body2" color="error" sx={{ mt: 1 }}>
@@ -258,19 +317,42 @@ function App() {
             )}
 
             {headers ? (
-              <Box
-                component="pre"
-                sx={{
-                  fontSize: '16px',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-all',
-                  overflowX: 'hidden',
-                  mt: 1,
-                }}
-              >
-                {Object.entries(headers)
-                  .map(([k, v]) => `${k}: ${v}`)
-                  .join('\n')}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
+                {Object.entries(headers).map(([k, v]) => {
+                  const keyLower = k.toLowerCase();
+                  const isTargetHeader = ['signature-input', 'signature', 'content-digest'].includes(keyLower);
+                  return (
+                    <Box
+                      key={k}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderBottom: '1px solid #4d4d4dff',
+                        pb: 1,
+                        '&:last-child': { borderBottom: 'none', pb: 0 }
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          fontSize: '16px',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                          pr: 2,
+                        }}
+                      >
+                        <strong>{k}:</strong> {v}
+                      </Box>
+                      {isTargetHeader && (
+                        <Tooltip title={copiedId === k ? 'Copied!' : `Copy ${k}`}>
+                          <IconButton size="small" onClick={() => handleCopy(v, k)}>
+                            {copiedId === k ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  );
+                })}
               </Box>
             ) : (
               <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
