@@ -52,7 +52,7 @@ try:
     
     # Sign
     sig_bytes = private_key_obj.sign(sig_base.encode("utf-8"))
-    signature_base64 = base64_encode = base64.b64encode(sig_bytes).decode("utf-8")
+    signature_base64 = base64.b64encode(sig_bytes).decode("utf-8")
 except Exception as e:
     print("Failed to load key or sign:", e)
     exit(1)
