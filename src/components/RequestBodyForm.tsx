@@ -1,10 +1,4 @@
-import {
-  Box,
-  TextField,
-  Typography,
-  Divider,
-  MenuItem,
-} from '@mui/material';
+import { Box, TextField, Typography, Divider, MenuItem } from '@mui/material';
 import type { SessionParams, PlayerParams } from '../types/api';
 
 interface RequestBodyFormProps {
@@ -19,6 +13,43 @@ const BOOL_OPTIONS = [
   { value: 'true', label: 'true' },
   { value: 'false', label: 'false' },
 ];
+
+const isJsonInvalid = (val: string): boolean => {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  try {
+    const parsed = JSON.parse(trimmed);
+    return !(typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed));
+  } catch {
+    return true;
+  }
+};
+
+const isEmailInvalid = (val: string): boolean => {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return !emailRegex.test(trimmed);
+};
+
+const isPhoneInvalid = (val: string): boolean => {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+  return !phoneRegex.test(trimmed);
+};
+
+const isCurrencyIsoInvalid = (val: string): boolean => {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  return !/^[a-zA-Z]{3}$/.test(trimmed);
+};
+
+const isCountryIsoInvalid = (val: string): boolean => {
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  return !/^[a-zA-Z]{2}$/.test(trimmed);
+};
 
 export default function RequestBodyForm({
   session,
@@ -61,6 +92,8 @@ export default function RequestBodyForm({
         onChange={handleSession('currencyIso')}
         size="small"
         fullWidth
+        error={!session.currencyIso.trim() || isCurrencyIsoInvalid(session.currencyIso)}
+        helperText={!session.currencyIso.trim() ? "currencyIso is required (e.g. USD)" : isCurrencyIsoInvalid(session.currencyIso) ? "Must be a 3-letter ISO code (e.g. USD)" : ""}
       />
 
       <TextField
@@ -96,7 +129,8 @@ export default function RequestBodyForm({
         fullWidth
         multiline
         minRows={2}
-        helperText="Valid JSON object"
+        error={isJsonInvalid(session.launchUrlQueryParams)}
+        helperText={isJsonInvalid(session.launchUrlQueryParams) ? "Invalid JSON object format (e.g. {\"key\": \"value\"})" : "Optional: requires valid JSON object"}
       />
 
       <Divider />
@@ -113,20 +147,62 @@ export default function RequestBodyForm({
         onChange={handlePlayer('id')}
         size="small"
         fullWidth
+        error={!player.id.trim()}
+        helperText={!player.id.trim() ? "player.id is required (e.g. ext-user-42)" : ""}
+      />
+
+      <TextField
+        label="Email"
+        placeholder="user@example.com"
+        value={player.email}
+        onChange={handlePlayer('email')}
+        size="small"
+        fullWidth
+        error={isEmailInvalid(player.email)}
+        helperText={isEmailInvalid(player.email) ? "Invalid email address format" : ""}
+      />
+
+      <TextField
+        label="Phone Number"
+        placeholder="+1234567890"
+        value={player.phoneNumber}
+        onChange={handlePlayer('phoneNumber')}
+        size="small"
+        fullWidth
+        error={isPhoneInvalid(player.phoneNumber)}
+        helperText={isPhoneInvalid(player.phoneNumber) ? "Invalid phone number format (7-20 digits)" : ""}
+      />
+
+      <TextField
+        label="Country ISO"
+        placeholder="US"
+        value={player.countryIso}
+        onChange={handlePlayer('countryIso')}
+        size="small"
+        fullWidth
+        error={isCountryIsoInvalid(player.countryIso)}
+        helperText={isCountryIsoInvalid(player.countryIso) ? "Must be a 2-letter ISO country code (e.g. US)" : ""}
+      />
+
+      <TextField
+        label="Preferred Currency ISO"
+        placeholder="EUR"
+        value={player.preferredCurrencyIso}
+        onChange={handlePlayer('preferredCurrencyIso')}
+        size="small"
+        fullWidth
+        error={isCurrencyIsoInvalid(player.preferredCurrencyIso)}
+        helperText={isCurrencyIsoInvalid(player.preferredCurrencyIso) ? "Must be a 3-letter ISO currency code (e.g. EUR)" : ""}
       />
 
       {( /* parameters are the same, so I combined them */
         [
           ['nick', 'Nick'],
           ['name', 'Name'],
-          ['email', 'Email'],
-          ['phoneNumber', 'Phone Number'],
           ['city', 'City'],
           ['address', 'Address'],
           ['zip', 'ZIP'],
           ['state', 'State'],
-          ['countryIso', 'Country ISO'],
-          ['preferredCurrencyIso', 'Preferred Currency ISO'],
           ['referralCode', 'Referral Code'],
           ['bonusCode', 'Bonus Code'],
           ['tag', 'Tag'],
@@ -175,7 +251,8 @@ export default function RequestBodyForm({
         size="small"
         fullWidth
         type="number"
-        helperText="Number"
+        error={player.trustedLevel.trim() !== '' && isNaN(Number(player.trustedLevel))}
+        helperText={player.trustedLevel.trim() !== '' && isNaN(Number(player.trustedLevel)) ? "Must be a valid number" : "Optional: numeric value"}
       />
     </Box>
   );

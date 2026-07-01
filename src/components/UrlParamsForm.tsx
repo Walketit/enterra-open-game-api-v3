@@ -27,6 +27,8 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
         onChange={handleChange('baseUrl')}
         fullWidth
         size="small"
+        error={!params.baseUrl.trim()}
+        helperText={!params.baseUrl.trim() ? "Base URL is required" : ""}
       />
 
       <TextField
@@ -36,6 +38,8 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
         onChange={handleChange('gameId')}
         fullWidth
         size="small"
+        error={!params.gameId.trim()}
+        helperText={!params.gameId.trim() ? "Game ID is required" : ""}
       />
 
       <TextField
@@ -45,6 +49,8 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
         onChange={handleChange('client')}
         fullWidth
         size="small"
+        error={!params.client.trim()}
+        helperText={!params.client.trim() ? "Client name is required" : ""}
       />
 
       <TextField
@@ -54,7 +60,8 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
         onChange={handleChange('language')}
         fullWidth
         size="small"
-        helperText="(optional, default: en)"
+        error={params.language.trim() !== '' && !/^[a-zA-Z]{2}$/.test(params.language.trim())}
+        helperText={params.language.trim() !== '' && !/^[a-zA-Z]{2}$/.test(params.language.trim()) ? "Must be a 2-letter ISO language code (e.g. en)" : "(optional, default: en)"}
       />
     </Box>
   );

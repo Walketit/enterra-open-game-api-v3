@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Box, TextField, Typography, MenuItem, Button } from '@mui/material';
 import type { SignatureParams } from '../types/api';
 import { generateNonce, nowSeconds } from '../utils/signatureBuilder';
@@ -5,22 +6,26 @@ import { generateNonce, nowSeconds } from '../utils/signatureBuilder';
 interface SignatureFormProps {
   params: SignatureParams;
   onChange: (p: SignatureParams) => void;
+  keyError?: string;
 }
 
 const ALG_OPTIONS = [
   { value: 'ed25519', label: 'ed25519' },
 ];
 
-export default function SignatureForm({ params, onChange }: SignatureFormProps) {
+export default function SignatureForm({ params, onChange, keyError }: SignatureFormProps) {
+  /* Timer to check signature expiration in real time */
+  const [currentTime, setCurrentTime] = useState(nowSeconds());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(nowSeconds());
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handle = (field: keyof SignatureParams) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...params, [field]: e.target.value });
-    };
-
-  const handleNumber = (field: 'created' | 'expires') =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const n = parseInt(e.target.value, 10);
-      if (!isNaN(n)) onChange({ ...params, [field]: n });
     };
 
   /* Update 'nonce', 'created' and 'expires' all at once */
@@ -41,7 +46,11 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         ? 'expires − created must not exceed 300 seconds'
         : '';
 
+  const isExpired = currentTime > params.expires;
   const nonceError = params.nonce.length > 128 ? 'Maximum 128 characters' : '';
+
+  const isPrivateKeyEmpty = !params.privateKey.trim();
+  const hasKeyError = !isPrivateKeyEmpty && !!keyError;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -61,6 +70,8 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         onChange={handle('alg')}
         size="small"
         fullWidth
+        error={!params.alg.trim()}
+        helperText={!params.alg.trim() ? "Signature algorithm is required" : ""}
       >
         {ALG_OPTIONS.map((o) => (
           <MenuItem key={o.value} value={o.value}>
@@ -72,32 +83,33 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
       <TextField
         label="created *"
         value={params.created}
-        onChange={handleNumber('created')}
         size="small"
         fullWidth
         type="number"
-        helperText="Unix timestamp (seconds)"
+        disabled
+        error={!params.created || isNaN(params.created) || isExpired}
+        helperText={(!params.created || isNaN(params.created)) ? "Created timestamp is required" : isExpired ? "Signature has expired" : "Generated automatically"}
       />
 
       <TextField
         label="expires *"
         value={params.expires}
-        onChange={handleNumber('expires')}
         size="small"
         fullWidth
         type="number"
-        error={!!createdExpiresError}
-        helperText={createdExpiresError || 'Unix timestamp (seconds), max +300 from created'}
+        disabled
+        error={(!params.expires || isNaN(params.expires)) || !!createdExpiresError || isExpired}
+        helperText={(!params.expires || isNaN(params.expires)) ? "Expires timestamp is required" : isExpired ? "Expired! Click Regenerate to refresh" : "Generated automatically (created + 300s)"}
       />
 
       <TextField
         label="nonce *"
         value={params.nonce}
-        onChange={handle('nonce')}
         size="small"
         fullWidth
-        error={!!nonceError}
-        helperText={nonceError || `${params.nonce.length}/128 characters`}
+        disabled
+        error={!params.nonce.trim() || !!nonceError}
+        helperText={!params.nonce.trim() ? "Nonce token is required" : `Generated automatically (${params.nonce.length}/128 chars)`}
       />
 
       <TextField
@@ -109,7 +121,14 @@ export default function SignatureForm({ params, onChange }: SignatureFormProps) 
         fullWidth
         multiline
         minRows={4}
-        helperText="PEM key."
+        error={isPrivateKeyEmpty || hasKeyError}
+        helperText={
+          isPrivateKeyEmpty
+            ? "Private key PEM is required to sign requests"
+            : hasKeyError
+              ? `Key Format Error: ${keyError}`
+              : "Paste your PEM private key here"
+        }
       />
     </Box>
   );
