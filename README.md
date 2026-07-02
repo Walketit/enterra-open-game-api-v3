@@ -1,32 +1,114 @@
-# React + TypeScript + Vite
+# Конструктор запросов Open Game для API v3
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Инструмент разработчика для тестирования, генерации и подписи HTTP-запросов с использованием алгоритма подписи `Ed25519`. Инструмент позволяет настраивать параметры запроса на лету, автоматически рассчитывать криптографические подписи и генерировать готовые примеры кода для интеграции.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Используемый стек технологий
 
-## React Compiler
+- **Core**: React + TypeScript + Vite.
+- **Стилизация и UI**: Material-UI.
+- **Криптография**: Web Crypto API.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Требования для запуска сгенерированных скриптов (среда интегратора)
+Для запуска сгенерированного кода в целевой системе разработчикам потребуются следующие библиотеки:
+- **Для PHP**: Включенное расширение **`ext-sodium`** (встроено по умолчанию начиная с PHP 7.2+).
+- **Для Python**: Установленные библиотеки **`requests`** и **`cryptography`** (установка через `pip install requests cryptography`).
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Инструкция по запуску
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+Для запуска проекта локально выполните следующие шаги:
+
+1. **Установка зависимостей**:
+   Убедитесь, что у вас установлен Node.js, и выполните в корне проекта:
+   ```bash
+   npm install
+   ```
+2. **Запуск в режиме разработки**:
+   ```bash
+   npm run dev
+   ```
+   Проект будет доступен в браузере по адресу: [http://localhost:5173](http://localhost:5173)
+
+---
+
+## Инструкция по сборке
+
+1. **Сборка проекта**:
+   ```bash
+   npm run build
+   ```
+   Скомпилированные статические файлы будут сохранены в папке `/dist`.
+
+2. **Предпросмотр сборки**:
+   Вы можете протестировать локальную сборку с помощью команды:
+   ```bash
+   npm run preview
+   ```
+
+---
+
+## Описание структуры проекта
+
+```text
+/src
+  ├── /components              # Визуальные React-компоненты форм и панелей
+  │    ├── GeneratedOutput.tsx # Правая колонка: вывод сгенерированного кода, URL, Body и заголовков
+  │    ├── RequestBodyForm.tsx # Поля ввода параметров тела запроса (Session, Player)
+  │    ├── SignatureForm.tsx   # Настройки параметров подписи (alg, created, expires, nonce, privateKey)
+  │    └── UrlParamsForm.tsx   # Ввод базовых параметров URL (baseUrl, gameId, client, language)
+  │
+  ├── /types                   # Описание типов TypeScript
+  │    └── api.ts              # Интерфейсы параметров API, сессии, игрока и подписи
+  │
+  ├── /utils                   # Утилиты, генераторы кода и валидация
+  │    ├── curlBuilder.ts        # Генератор запроса в формате cURL
+  │    ├── defaults.ts           # Начальные конфигурации параметров и менеджер localStorage
+  │    ├── phpBuilder.ts         # Генератор PHP-скрипта на базе расширения Sodium
+  │    ├── pythonBuilder.ts      # Генератор Python-кода с использованием библиотеки Cryptography
+  │    ├── requestBodyBuilder.ts # Сборщик JSON тела запроса
+  │    ├── signatureBuilder.ts   # Криптографический расчет заголовков Content-Digest и Signature
+  │    ├── urlBuilder.ts         # Сборщик итогового HTTP URL адреса запроса
+  │    └── validation.ts         # Валидация полей параметров
+  │
+  ├── App.tsx                  # Главный компонент приложения (управление состоянием, эффекты)
+  ├── main.tsx                 # Точка входа в React-приложение
+  └── index.css                # Глобальные стили
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## Перечень реализованного функционала
+
+1. **Генераторы HTTP-запросов**:
+   - Автоматическая сборка тела запроса (JSON), URL и заголовков. Пустые поля автоматически фильтруются и не отправляются.
+   - Генерация готовых примеров интеграции во вкладках: **cURL**, **PHP**, **Python**.
+   - Вкладка **Link** отображает сырую ссылку.
+2. **Криптографическая подпись**:
+   - Поддержка алгоритма подписи `Ed25519`.
+   - Автоматический расчет контрольной суммы тела запроса (`Content-Digest` по алгоритму SHA-512 в кодировке Base64).
+   - Формирование валидного значения `Signature-Input` и подписи `Signature` от сигнатурной строки на базе приватного ключа PEM.
+3. **Менеджер конфигурации**:
+   - **Автосохранение**: Состояние полей ввода сохраняется в `localStorage` (за исключением приватного ключа в целях безопасности).
+   - **Импорт/Экспорт**: Экспорт текущих настроек в JSON-файл с выбором пути сохранения в системе и импорт с валидацией структуры данных.
+   - **Очистка**: Кнопка Clear мгновенно сбрасывает все стейты и очищает `localStorage`.
+4. **Валидация**:
+   - Подсветка обязательных пустых полей ввода красным цветом с выводом подсказок.
+   - Валидация формата почты и номера телефона.
+   - Жесткая валидация структуры JSON-объекта в поле `launchUrlQueryParams`.
+   - Проверка стандартов ISO для валют (3 буквы), стран (2 буквы) и языка (2 буквы).
+   - Контроль срока жизни подписи: интерфейс отслеживает текущее время и при превышении срока жизни подписи в 5 минут (300 секунд) блокирует генерацию примеров кода, предлагая нажать кнопку **Regenerate**.
+   - Блокировка примеров кода при любых ошибках валидации с выводом предупреждения со списком ошибок.
+5. **Кнопки копирования**:
+   - Копирование сгенерированного кода, сырого URL или JSON тела в один клик.
+   - Копирование всех заголовков, а также копирование сырых криптографических значений заголовков (`Content-Digest`, `Signature-Input`, `Signature`).
+
+---
+
+## Известные ограничения
+
+1. **Безопасность приватного ключа**:
+   В целях безопасности приватный ключ PEM (`privateKey`) никогда не сохраняется в `localStorage` и не выгружается в файлы конфигурации при экспорте. При обновлении страницы или импорте конфига его необходимо вставить вручную.
+2. **Изолированность**: Программа не отправляет никаких запросов в сеть и работает строго в автономном режиме на стороне клиента.
