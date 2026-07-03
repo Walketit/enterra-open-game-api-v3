@@ -53,13 +53,13 @@ export default function GeneratedOutput({
             <Tab label="Python" value="python" sx={{ textTransform: 'none' }} />
             <Tab label="Link" value="link" sx={{ textTransform: 'none' }} />
           </Tabs>
-          {!hasErrors && headers && generatedUrl && (
+          {(!hasErrors && (activeTab === 'link' ? !!generatedUrl : !!generatedUrl && !!headers)) && (
             <Tooltip title={copiedId === activeTab ? 'Copied!' : 'Copy to clipboard'}>
               <IconButton
                 size="small"
                 onClick={() => {
                   let text = '';
-                  if (activeTab === 'curl') text = buildCurl(generatedUrl, headers, bodyJson);
+                  if (activeTab === 'curl' && headers) text = buildCurl(generatedUrl, headers, bodyJson);
                   else if (activeTab === 'php') text = buildPhp(generatedUrl, urlParams.client, bodyJson);
                   else if (activeTab === 'python') text = buildPython(generatedUrl, urlParams.client, bodyJson);
                   else if (activeTab === 'link') text = generatedUrl;
@@ -82,36 +82,11 @@ export default function GeneratedOutput({
               ))}
             </Box>
           </Alert>
-        ) : headers && generatedUrl ? (
-          <Box sx={{ mt: 1 }}>
-            {activeTab !== 'link' ? (
-              <SyntaxHighlighter
-                language={activeTab === 'curl' ? 'bash' : activeTab === 'php' ? 'php' : 'python'}
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  padding: '16px',
-                  background: '#00000000',
-                }}
-                wrapLongLines
-                codeTagProps={{
-                  style: {
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all',
-                  },
-                }}
-              >
-                {activeTab === 'curl'
-                  ? buildCurl(generatedUrl, headers, bodyJson)
-                  : activeTab === 'php'
-                    ? buildPhp(generatedUrl, urlParams.client, bodyJson)
-                    : buildPython(generatedUrl, urlParams.client, bodyJson)}
-              </SyntaxHighlighter>
-            ) : (
+        ) : activeTab === 'link' ? (
+          generatedUrl ? (
+            <Box sx={{ mt: 1 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Alert severity="warning" sx={{ borderRadius: '4px', fontSize: '16px', }}>
+                <Alert severity="warning" sx={{ borderRadius: '4px', fontSize: '16px' }}>
                   URL itself is not a complete request. To execute, headers and body are also required.
                 </Alert>
                 <Box
@@ -127,11 +102,51 @@ export default function GeneratedOutput({
                   {generatedUrl}
                 </Box>
               </Box>
-            )}
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+              Please fill in URL parameters to generate the link
+            </Typography>
+          )
+        ) : sigError ? (
+          <Alert severity="error" sx={{ borderRadius: '4px', fontSize: '16px', mt: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              Cryptographic signature error:
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {sigError}
+            </Typography>
+          </Alert>
+        ) : headers && generatedUrl ? (
+          <Box sx={{ mt: 1 }}>
+            <SyntaxHighlighter
+              language={activeTab === 'curl' ? 'bash' : activeTab === 'php' ? 'php' : 'python'}
+              style={vscDarkPlus}
+              customStyle={{
+                margin: 0,
+                borderRadius: '4px',
+                fontSize: '16px',
+                padding: '16px',
+                background: '#00000000',
+              }}
+              wrapLongLines
+              codeTagProps={{
+                style: {
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                },
+              }}
+            >
+              {activeTab === 'curl'
+                ? buildCurl(generatedUrl, headers, bodyJson)
+                : activeTab === 'php'
+                  ? buildPhp(generatedUrl, urlParams.client, bodyJson)
+                  : buildPython(generatedUrl, urlParams.client, bodyJson)}
+            </SyntaxHighlighter>
           </Box>
         ) : (
           <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-            Please fill in URL and signature parameters to generate the example
+            Please fill in URL and signature parameters (privateKey) to generate the example
           </Typography>
         )}
       </Paper>
