@@ -48,7 +48,10 @@ function App() {
     return defaultSig;
   });
 
-  const [headers, setHeaders] = useState<GeneratedHeaders | null>(null);
+  const [signedData, setSignedData] = useState<{
+    bodyJson: string;
+    headers: GeneratedHeaders;
+  } | null>(null);
   const [sigError, setSigError] = useState<string>('');
   const [currentTime, setCurrentTime] = useState(nowSeconds());
 
@@ -201,21 +204,31 @@ function App() {
 
   /* Compute ed25519 HTTP signature */
   useEffect(() => {
+    let active = true;
+
     if (!sigParams.privateKey || !generatedUrl) {
-      setHeaders(null);
+      setSignedData(null);
       setSigError('');
       return;
     }
 
-    buildHeaders(sigParams, urlParams.client, generatedUrl, bodyJson)
+    const bodyToSign = bodyJson;
+
+    buildHeaders(sigParams, urlParams.client, generatedUrl, bodyToSign)
       .then((h) => {
-        setHeaders(h);
+        if (!active) return;
+        setSignedData({ bodyJson: bodyToSign, headers: h });
         setSigError('');
       })
       .catch((e: unknown) => {
-        setHeaders(null);
+        if (!active) return;
+        setSignedData(null);
         setSigError(e instanceof Error ? e.message : 'Signature generation error');
       });
+
+    return () => {
+      active = false;
+    };
   }, [sigParams, urlParams.client, generatedUrl, bodyJson]);
 
   /* UI layout */
@@ -279,8 +292,8 @@ function App() {
           hasErrors={hasErrors}
           validationErrors={validationErrors}
           generatedUrl={generatedUrl}
-          headers={headers}
-          bodyJson={bodyJson}
+          headers={signedData ? signedData.headers : null}
+          bodyJson={signedData ? signedData.bodyJson : bodyJson}
           sigError={sigError}
           sigParams={sigParams}
           urlParams={urlParams}
