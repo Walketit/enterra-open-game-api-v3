@@ -6,12 +6,16 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
     .replace(/-----BEGIN[\s\S]*?-----/, '')
     .replace(/-----END[\s\S]*?-----/, '')
     .replace(/\s+/g, '');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  try {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } catch (err) {
+    throw new Error('Invalid PEM key: expected base64 format in BEGIN/END PRIVATE KEY block');
   }
-  return bytes.buffer;
 }
 
 /* SHA-512 hash of body -> "sha-512=:<base64>:" */
@@ -25,13 +29,17 @@ async function computeContentDigest(bodyJson: string): Promise<string> {
 /* Import PEM private key for signing */
 async function importPrivateKey(pem: string): Promise<CryptoKey> {
   const keyData = pemToArrayBuffer(pem);
-  return crypto.subtle.importKey(
-    'pkcs8',
-    keyData,
-    { name: 'Ed25519' },
-    false,
-    ['sign'],
-  );
+  try {
+    return await crypto.subtle.importKey(
+      'pkcs8',
+      keyData,
+      { name: 'Ed25519' },
+      false,
+      ['sign'],
+    );
+  } catch (err) {
+    throw new Error('Invalid key format: expected Ed25519 private key in PKCS#8 format');
+  }
 }
 
 /* Build the signature params value */
