@@ -1,12 +1,14 @@
 /* Build a PHP script */
 export function buildPhp(
-  url: string,
-  client: string,
-  bodyJson: string,
+    url: string,
+    client: string,
+    bodyJson: string,
 ): string {
-  const escapedBody = bodyJson.replace(/'/g, "\\'");
+    const escapedBody = bodyJson
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
 
-  return `<?php
+    return `<?php
 
 // Parameters
 $url = '${url}';
@@ -34,18 +36,15 @@ $sigBase = "\\"@method\\": POST\\n" .
            "\\"@signature-params\\": " . $sigParamsVal;
 
 // Sign using Sodium extension (Ed25519)
-$pemRows = explode("\n", trim($privateKey));
-$pemRows = array_filter($pemRows, function($row) {
-    return strpos($row, '---') === false && !empty(trim($row));
-});
-
-$der = base64_decode(implode('', $pemRows));
-if ($der === false || strlen($der) < 48) {
+$pkey = openssl_pkey_get_private($privateKey);
+if ($pkey === false) {
     die("Invalid PEM private key format\\n");
 }
-
-// PKCS#8 private key for Ed25519 is 48 bytes. The last 32 bytes contain the raw private key string.
-$rawSeed = substr($der, -32);
+$details = openssl_pkey_get_details($pkey);
+if ($details === false || !isset($details['ed25519']['priv'])) {
+    die("Failed to extract Ed25519 private key seed\\n");
+}
+$rawSeed = $details['ed25519']['priv'];
 
 // In Sodium, a signing key is generated from the 32-byte seed
 $keyPair = sodium_crypto_sign_seed_keypair($rawSeed);
