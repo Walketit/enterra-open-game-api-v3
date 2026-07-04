@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Box, TextField, Typography, MenuItem, Button } from '@mui/material';
 import type { SignatureParams } from '../types/api';
 import { generateNonce, nowSeconds } from '../utils/signatureBuilder';
@@ -13,7 +13,7 @@ const ALG_OPTIONS = [
   { value: 'ed25519', label: 'ed25519' },
 ];
 
-export default function SignatureForm({ params, onChange, keyError }: SignatureFormProps) {
+const SignatureForm = memo(function SignatureForm({ params, onChange, keyError }: SignatureFormProps) {
   /* Timer to check signature expiration in real time */
   const [currentTime, setCurrentTime] = useState(nowSeconds());
   useEffect(() => {
@@ -132,4 +132,6 @@ export default function SignatureForm({ params, onChange, keyError }: SignatureF
       />
     </Box>
   );
-}
+});
+
+export default SignatureForm;

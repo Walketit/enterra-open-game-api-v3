@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, TextField, Typography } from '@mui/material';
 import type { UrlParams } from '../types/api';
 
@@ -6,7 +7,7 @@ interface UrlParamsFormProps {
   onChange: (params: UrlParams) => void;
 }
 
-export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) {
+const UrlParamsForm = memo(function UrlParamsForm({ params, onChange }: UrlParamsFormProps) {
 
   const handleChange =
     (field: keyof UrlParams) =>
@@ -65,4 +66,6 @@ export default function UrlParamsForm({ params, onChange }: UrlParamsFormProps) 
       />
     </Box>
   );
-}
+});
+
+export default UrlParamsForm;

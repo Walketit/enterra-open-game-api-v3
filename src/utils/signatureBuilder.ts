@@ -27,7 +27,7 @@ async function computeContentDigest(bodyJson: string): Promise<string> {
 }
 
 /* Import PEM private key for signing */
-async function importPrivateKey(pem: string): Promise<CryptoKey> {
+export async function importPrivateKey(pem: string): Promise<CryptoKey> {
   const keyData = pemToArrayBuffer(pem);
   try {
     return await crypto.subtle.importKey(
@@ -67,12 +67,11 @@ export async function buildHeaders(
   keyid: string,
   targetUri: string,
   bodyJson: string,
+  key: CryptoKey,
 ): Promise<GeneratedHeaders> {
   const contentDigest = await computeContentDigest(bodyJson);
   const signatureParamsValue = buildSignatureParamsValue(sig, keyid);
   const signatureBase = buildSignatureBase(targetUri, contentDigest, signatureParamsValue);
-
-  const key = await importPrivateKey(sig.privateKey);
 
   const signatureBuffer = await crypto.subtle.sign(
     'Ed25519',

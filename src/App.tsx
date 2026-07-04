@@ -8,7 +8,7 @@ import SignatureForm from './components/SignatureForm';
 import GeneratedOutput from './components/GeneratedOutput';
 import { buildUrl } from './utils/urlBuilder';
 import { buildRequestBody } from './utils/requestBodyBuilder';
-import { buildHeaders, nowSeconds } from './utils/signatureBuilder';
+import { buildHeaders, nowSeconds, importPrivateKey } from './utils/signatureBuilder';
 import type {
   UrlParams,
   SessionParams,
@@ -54,6 +54,7 @@ function App() {
   } | null>(null);
   const [sigError, setSigError] = useState<string>('');
   const [currentTime, setCurrentTime] = useState(nowSeconds());
+  const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,6 +62,32 @@ function App() {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  /* Import PEM private key once when it changes */
+  useEffect(() => {
+    let active = true;
+    if (!sigParams.privateKey) {
+      setCryptoKey(null);
+      setSigError('');
+      return;
+    }
+
+    importPrivateKey(sigParams.privateKey)
+      .then((key) => {
+        if (!active) return;
+        setCryptoKey(key);
+        setSigError('');
+      })
+      .catch((e: unknown) => {
+        if (!active) return;
+        setCryptoKey(null);
+        setSigError(e instanceof Error ? e.message : 'Invalid private key format');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sigParams.privateKey]);
 
   /* Export current config as a JSON file, excluding private key */
   const handleExport = async () => {
@@ -180,18 +207,24 @@ function App() {
 
   /* Autosave config to localStorage on change, excluding private key */
   useEffect(() => {
-    const configToSave = {
-      urlParams,
-      session,
-      player,
-      sigParams: {
-        alg: sigParams.alg,
-        created: sigParams.created,
-        expires: sigParams.expires,
-        nonce: sigParams.nonce,
-      }
+    const timer = setTimeout(() => {
+      const configToSave = {
+        urlParams,
+        session,
+        player,
+        sigParams: {
+          alg: sigParams.alg,
+          created: sigParams.created,
+          expires: sigParams.expires,
+          nonce: sigParams.nonce,
+        }
+      };
+      localStorage.setItem('custom_config', JSON.stringify(configToSave));
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
     };
-    localStorage.setItem('custom_config', JSON.stringify(configToSave));
   }, [urlParams, session, player, sigParams.alg, sigParams.created, sigParams.expires, sigParams.nonce]);
 
   const validationErrors = getValidationErrors(urlParams, session, player, sigParams, currentTime);
@@ -206,30 +239,61 @@ function App() {
   useEffect(() => {
     let active = true;
 
-    if (!sigParams.privateKey || !generatedUrl) {
+    if (!cryptoKey || !generatedUrl) {
       setSignedData(null);
-      setSigError('');
       return;
     }
 
     const bodyToSign = bodyJson;
 
-    buildHeaders(sigParams, urlParams.client, generatedUrl, bodyToSign)
-      .then((h) => {
-        if (!active) return;
-        setSignedData({ bodyJson: bodyToSign, headers: h });
-        setSigError('');
-      })
-      .catch((e: unknown) => {
-        if (!active) return;
-        setSignedData(null);
-        setSigError(e instanceof Error ? e.message : 'Signature generation error');
-      });
+    const timer = setTimeout(() => {
+      buildHeaders(sigParams, urlParams.client, generatedUrl, bodyToSign, cryptoKey)
+        .then((h) => {
+          if (!active) return;
+          setSignedData({ bodyJson: bodyToSign, headers: h });
+          setSigError('');
+        })
+        .catch((e: unknown) => {
+          if (!active) return;
+          setSignedData(null);
+          setSigError(e instanceof Error ? e.message : 'Signature generation error');
+        });
+    }, 100);
 
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, [sigParams, urlParams.client, generatedUrl, bodyJson]);
+  }, [cryptoKey, sigParams.alg, sigParams.created, sigParams.expires, sigParams.nonce, urlParams.client, generatedUrl, bodyJson]);
+
+  /* Debounce the generated examples output panel */
+  const [debouncedOutput, setDebouncedOutput] = useState(() => ({
+    hasErrors,
+    validationErrors,
+    generatedUrl,
+    headers: signedData ? signedData.headers : null,
+    bodyJson: signedData ? signedData.bodyJson : bodyJson,
+    sigError,
+    sigParams,
+    urlParams,
+  }));
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOutput({
+        hasErrors,
+        validationErrors,
+        generatedUrl,
+        headers: signedData ? signedData.headers : null,
+        bodyJson: signedData ? signedData.bodyJson : bodyJson,
+        sigError,
+        sigParams,
+        urlParams,
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [hasErrors, validationErrors, generatedUrl, signedData, bodyJson, sigError, sigParams, urlParams]);
 
   /* UI layout */
   return (
@@ -289,14 +353,14 @@ function App() {
         </Box>
 
         <GeneratedOutput
-          hasErrors={hasErrors}
-          validationErrors={validationErrors}
-          generatedUrl={generatedUrl}
-          headers={signedData ? signedData.headers : null}
-          bodyJson={signedData ? signedData.bodyJson : bodyJson}
-          sigError={sigError}
-          sigParams={sigParams}
-          urlParams={urlParams}
+          hasErrors={debouncedOutput.hasErrors}
+          validationErrors={debouncedOutput.validationErrors}
+          generatedUrl={debouncedOutput.generatedUrl}
+          headers={debouncedOutput.headers}
+          bodyJson={debouncedOutput.bodyJson}
+          sigError={debouncedOutput.sigError}
+          sigParams={debouncedOutput.sigParams}
+          urlParams={debouncedOutput.urlParams}
         />
 
       </Box>

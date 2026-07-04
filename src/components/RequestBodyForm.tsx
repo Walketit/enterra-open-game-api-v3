@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Box, TextField, Typography, Divider, MenuItem } from '@mui/material';
 import type { SessionParams, PlayerParams } from '../types/api';
 
@@ -51,7 +52,7 @@ const isCountryIsoInvalid = (val: string): boolean => {
   return !/^[a-zA-Z]{2}$/.test(trimmed);
 };
 
-export default function RequestBodyForm({
+const RequestBodyForm = memo(function RequestBodyForm({
   session,
   player,
   onSessionChange,
@@ -256,4 +257,6 @@ export default function RequestBodyForm({
       />
     </Box>
   );
-}
+});
+
+export default RequestBodyForm;
